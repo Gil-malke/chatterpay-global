@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "buildCommand": "cd ../.. && pnpm install && pnpm --filter @workspace/chatterpay run build",
+  "outputDirectory": "dist/public",
+  "installCommand": "echo 'using root install'"
+}
