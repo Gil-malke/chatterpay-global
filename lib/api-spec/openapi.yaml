@@ -1,0 +1,1018 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: ChatterPay Global API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: foreign-clients
+    description: Foreign client management
+  - name: contracts
+    description: Chat contracts
+  - name: wallet
+    description: Wallet operations
+  - name: chat
+    description: Chat/messaging
+  - name: assignments
+    description: Client assignments
+  - name: admin
+    description: Admin operations
+  - name: mpesa
+    description: M-Pesa payments
+  - name: withdrawals
+    description: Withdrawal requests
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new Kenyan user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login (users, foreign clients, admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all Kenyan users (admin only)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}/ban:
+    post:
+      operationId: banUser
+      tags: [users]
+      summary: Ban or unban a user (admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BanUserBody"
+      responses:
+        "200":
+          description: User banned/unbanned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /foreign-clients:
+    get:
+      operationId: listForeignClients
+      tags: [foreign-clients]
+      summary: List all foreign clients (admin only)
+      responses:
+        "200":
+          description: List of foreign clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ForeignClient"
+    post:
+      operationId: createForeignClient
+      tags: [foreign-clients]
+      summary: Create a foreign client account (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateForeignClientBody"
+      responses:
+        "201":
+          description: Foreign client created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForeignClient"
+
+  /foreign-clients/{clientId}:
+    get:
+      operationId: getForeignClient
+      tags: [foreign-clients]
+      summary: Get foreign client by ID
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Foreign client details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForeignClient"
+
+  /contracts:
+    get:
+      operationId: listContracts
+      tags: [contracts]
+      summary: List contracts for current user
+      responses:
+        "200":
+          description: List of contracts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contract"
+    post:
+      operationId: createContract
+      tags: [contracts]
+      summary: Buy a new contract (24hr = KSh 200)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContractBody"
+      responses:
+        "201":
+          description: Contract created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contract"
+        "400":
+          description: Insufficient balance or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /contracts/active:
+    get:
+      operationId: getActiveContract
+      tags: [contracts]
+      summary: Get the active contract for current user
+      responses:
+        "200":
+          description: Active contract or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contract"
+
+  /wallet:
+    get:
+      operationId: getWallet
+      tags: [wallet]
+      summary: Get current user wallet balances
+      responses:
+        "200":
+          description: Wallet details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /wallet/transactions:
+    get:
+      operationId: listTransactions
+      tags: [wallet]
+      summary: List wallet transactions
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /mpesa/deposit:
+    post:
+      operationId: initiateDeposit
+      tags: [mpesa]
+      summary: Initiate M-Pesa STK Push deposit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MpesaDepositBody"
+      responses:
+        "200":
+          description: STK push initiated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MpesaDepositResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /mpesa/callback:
+    post:
+      operationId: mpesaCallback
+      tags: [mpesa]
+      summary: M-Pesa payment callback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Callback processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /assignments:
+    get:
+      operationId: listAssignments
+      tags: [assignments]
+      summary: List assignments for current user/client
+      responses:
+        "200":
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+    post:
+      operationId: createAssignment
+      tags: [assignments]
+      summary: Assign a foreign client to a Kenyan user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssignmentBody"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        "400":
+          description: Max clients reached or validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /assignments/{assignmentId}:
+    delete:
+      operationId: deleteAssignment
+      tags: [assignments]
+      summary: Remove an assignment (admin only)
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignment removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /chat/rooms:
+    get:
+      operationId: listChatRooms
+      tags: [chat]
+      summary: List chat rooms for current user/client
+      responses:
+        "200":
+          description: List of chat rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatRoom"
+
+  /chat/rooms/{roomId}/messages:
+    get:
+      operationId: listMessages
+      tags: [chat]
+      summary: List messages in a chat room
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages in room
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [chat]
+      summary: Send a message in a chat room
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: No active contract or not assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
+  /admin/chat-logs:
+    get:
+      operationId: listChatLogs
+      tags: [admin]
+      summary: View all chat logs (admin only)
+      responses:
+        "200":
+          description: All chat messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+
+  /withdrawals:
+    get:
+      operationId: listWithdrawals
+      tags: [withdrawals]
+      summary: List withdrawal requests
+      responses:
+        "200":
+          description: List of withdrawals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+    post:
+      operationId: requestWithdrawal
+      tags: [withdrawals]
+      summary: Request a withdrawal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalBody"
+      responses:
+        "201":
+          description: Withdrawal requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+        "400":
+          description: Insufficient balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /withdrawals/{withdrawalId}/approve:
+    post:
+      operationId: approveWithdrawal
+      tags: [withdrawals]
+      summary: Approve a withdrawal request (admin only)
+      parameters:
+        - name: withdrawalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Withdrawal approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+
+  /withdrawals/{withdrawalId}/reject:
+    post:
+      operationId: rejectWithdrawal
+      tags: [withdrawals]
+      summary: Reject a withdrawal request (admin only)
+      parameters:
+        - name: withdrawalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Withdrawal rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [users]
+      summary: List notifications for current user
+      responses:
+        "200":
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{notifId}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [users]
+      summary: Mark a notification as read
+      parameters:
+        - name: notifId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Notification marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required: [error]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    RegisterBody:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        phone:
+          type: string
+      required: [username, email, password]
+
+    LoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/CurrentUser"
+      required: [token, user]
+
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [user, foreign_client, admin]
+        kshBalance:
+          type: number
+        usdtBalance:
+          type: number
+        isBanned:
+          type: boolean
+      required: [id, username, role, kshBalance, usdtBalance, isBanned]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        kshBalance:
+          type: number
+        usdtBalance:
+          type: number
+        isBanned:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        assignedClientsCount:
+          type: integer
+        hasActiveContract:
+          type: boolean
+      required: [id, username, kshBalance, usdtBalance, isBanned, createdAt]
+
+    BanUserBody:
+      type: object
+      properties:
+        banned:
+          type: boolean
+      required: [banned]
+
+    ForeignClient:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        usdtBalance:
+          type: number
+        country:
+          type: string
+        isOnline:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        assignedUsersCount:
+          type: integer
+      required: [id, username, usdtBalance, isOnline, createdAt]
+
+    CreateForeignClientBody:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          minLength: 6
+        usdtBalance:
+          type: number
+        country:
+          type: string
+      required: [username, password]
+
+    Contract:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        plan:
+          type: string
+          enum: [24h]
+        costKsh:
+          type: number
+        maxClients:
+          type: integer
+        isActive:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, plan, costKsh, maxClients, isActive, expiresAt, createdAt]
+
+    CreateContractBody:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [24h]
+      required: [plan]
+
+    Wallet:
+      type: object
+      properties:
+        kshBalance:
+          type: number
+        usdtBalance:
+          type: number
+        userId:
+          type: integer
+      required: [kshBalance, usdtBalance, userId]
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [deposit, withdrawal, contract_purchase, earning]
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [KSH, USDT]
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, type, amount, currency, createdAt]
+
+    MpesaDepositBody:
+      type: object
+      properties:
+        phone:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+      required: [phone, amount]
+
+    MpesaDepositResponse:
+      type: object
+      properties:
+        checkoutRequestId:
+          type: string
+        merchantRequestId:
+          type: string
+        responseDescription:
+          type: string
+        message:
+          type: string
+      required: [message]
+
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        foreignClientId:
+          type: integer
+        assignedAt:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/User"
+        foreignClient:
+          $ref: "#/components/schemas/ForeignClient"
+        chatRoomId:
+          type: integer
+      required: [id, userId, foreignClientId, assignedAt]
+
+    CreateAssignmentBody:
+      type: object
+      properties:
+        userId:
+          type: integer
+        foreignClientId:
+          type: integer
+      required: [userId, foreignClientId]
+
+    ChatRoom:
+      type: object
+      properties:
+        id:
+          type: integer
+        assignmentId:
+          type: integer
+        lastMessage:
+          type: string
+        lastMessageAt:
+          type: string
+          format: date-time
+        unreadCount:
+          type: integer
+        participant:
+          type: object
+          properties:
+            id:
+              type: integer
+            username:
+              type: string
+            isOnline:
+              type: boolean
+          required: [id, username, isOnline]
+      required: [id, assignmentId, unreadCount, participant]
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        roomId:
+          type: integer
+        senderId:
+          type: integer
+        senderRole:
+          type: string
+          enum: [user, foreign_client]
+        senderUsername:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, roomId, senderId, senderRole, senderUsername, content, createdAt]
+
+    SendMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required: [content]
+
+    AdminDashboard:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalForeignClients:
+          type: integer
+        activeContracts:
+          type: integer
+        totalDepositsKsh:
+          type: number
+        totalEarningsUsdt:
+          type: number
+        pendingWithdrawals:
+          type: integer
+        totalMessages:
+          type: integer
+        recentUsers:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+      required: [totalUsers, totalForeignClients, activeContracts, totalDepositsKsh, totalEarningsUsdt, pendingWithdrawals, totalMessages, recentUsers]
+
+    Withdrawal:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [KSH, USDT]
+        phone:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        username:
+          type: string
+      required: [id, userId, amount, currency, status, createdAt]
+
+    WithdrawalBody:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 1
+        currency:
+          type: string
+          enum: [KSH, USDT]
+        phone:
+          type: string
+      required: [amount, currency]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [payment_success, contract_activated, client_assigned, withdrawal_approved, withdrawal_rejected]
+        message:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, userId, type, message, isRead, createdAt]
